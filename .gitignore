@@ -224,3 +224,6 @@ __marimo__/
 
 # macOS
 .DS_Store
+
+# pr-create 스킬이 만드는 임시 PR 본문
+.pr-body.md
