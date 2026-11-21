@@ -8,7 +8,7 @@
 - [ ] 시각화
 - [ ] 실패 분석, 개선 실험
 - [ ] 외부 평가 (CVC-ClinicDB)
-- [ ] 환경, 설정 (requirements, config, 훅)
+- [ ] 환경, 설정 (requirements, config, 훅, AGENTS.md, 스킬)
 - [ ] 문서 (README, 보고서, 발표자료, 회의록)
 
 ## 작업 내용
