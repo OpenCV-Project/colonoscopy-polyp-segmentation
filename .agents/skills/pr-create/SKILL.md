@@ -76,6 +76,20 @@ git diff origin/main...HEAD
 
 `.github/pull_request_template.md`를 읽고 섹션 순서와 제목을 그대로 쓴다. 템플릿의 `<!-- -->` 안내 주석은 지운다.
 
+먼저 이 브랜치에 열린 PR이 있는지 확인한다.
+
+```bash
+gh pr list --head "${CURRENT_BRANCH}" --base main --state open --json number,url
+gh pr view <번호> --json title,body
+```
+
+- PR이 없으면 아래 규칙대로 본문을 새로 쓴다.
+- PR이 있으면 기존 본문을 바탕으로 **수정한다**. 처음부터 다시 쓰지 않는다.
+  - 기존 본문 이후 추가된 커밋의 내용을 해당 문단에 고쳐 넣거나 새 문단으로 추가한다.
+  - 담당 파트는 현재 템플릿 문구로 맞추고, 전체 diff 기준으로 다시 체크한다.
+  - 사람이 직접 쓴 문장은 지우거나 바꾸지 않는다. 현재 diff와 맞지 않는 내용이 있으면 고치지 말고 사용자에게 알린다.
+  - 제목은 전체 변경 범위를 더 이상 담지 못할 때만 바꾼다.
+
 ### 담당 파트
 
 - 템플릿의 체크리스트를 그대로 두고, 변경 내용에 해당하는 항목만 `[x]`로 바꾼다. 항목을 추가하거나 지우지 않는다.
@@ -110,9 +124,7 @@ git diff origin/main...HEAD
 
 ## Step 8: 생성 또는 업데이트
 
-```bash
-gh pr list --head "${CURRENT_BRANCH}" --base main --json number,url,state
-```
+Step 6에서 확인한 결과를 따른다.
 
 PR이 없으면:
 
@@ -120,10 +132,10 @@ PR이 없으면:
 gh pr create --base main --head "${CURRENT_BRANCH}" --title "${PR_TITLE}" --body-file .pr-body.md
 ```
 
-PR이 있으면:
+PR이 있으면 Step 6에서 수정한 본문으로 바로 업데이트한다.
 
-- `gh pr edit --body-file`은 기존 본문을 전부 바꾼다. `gh pr view <번호> --json body`로 확인해 본문이 비어 있지 않으면 교체할지 사용자에게 먼저 묻는다.
-- 교체하기로 하면 `gh pr edit <번호> --title "${PR_TITLE}" --body-file .pr-body.md`
-- 교체하지 않기로 하면 `gh pr edit`을 호출하지 않는다.
+```bash
+gh pr edit <번호> --title "${PR_TITLE}" --body-file .pr-body.md
+```
 
-끝나면 `.pr-body.md`를 지우고 PR URL을 보여 준다. PR 생성·수정이 실패하면 **PR을 올리지 않았다**고 알리고(문제: 에러 요약 / 해결: 에러에 맞는 조치), 본문을 보여 줘 수동으로 만들 수 있게 한다.
+끝나면 `.pr-body.md`를 지우고 PR URL과 함께 본문에서 무엇을 바꿨는지 짧게 알린다. PR 생성·수정이 실패하면 **PR을 올리지 않았다**고 알리고(문제: 에러 요약 / 해결: 에러에 맞는 조치), 본문을 보여 줘 수동으로 만들 수 있게 한다.
