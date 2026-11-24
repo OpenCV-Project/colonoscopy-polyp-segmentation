@@ -1,0 +1,11 @@
+{
+  "dataset": "Kvasir-SEG (test)",
+  "num_images": 150,
+  "threshold": 0.4,
+  "mean_iou": 0.8261687256070942,
+  "mean_dice": 0.8936682211350897,
+  "mean_ms_per_image": 11.519056466666665,
+  "benchmark_device": "cuda",
+  "total_params": 22437457,
+  "trainable_params": 22437457
+}
