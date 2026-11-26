@@ -45,9 +45,9 @@
 
 ### 2.2 U-Net (담당: 강승태)
 - 모델: `segmentation_models_pytorch.Unet` (`encoder_name="resnet34"`, `encoder_weights="imagenet"`)
-- 학습 조건: 
-- 체크포인트 선정 및 이진화 임계값: 
-- 파라미터 수: 
+- 학습 조건: 30 Epochs, Batch size 16, AdamW (`lr=1e-4`, `weight_decay=1e-4`), BCE+Dice 손실, `seed=42` *(세부 스케줄러/AMP 설정은 `train_unet.py` 기준 확인)*
+- 체크포인트 선정 및 이진화 임계값: 검증 세트(`val`) Dice 기준 최고 성능 체크포인트 선정 (Epoch 29, `Val Dice: 0.8888`), 이진화 임계값 `0.5` *(임계값 튜닝 여부 확인)*
+- 파라미터 수: `[확인 필요 - 모델 출력 또는 train_unet.py 확인]`
 
 ### 2.3 DeepLabv3+ (담당: 강현구)
 - 모델: `segmentation_models_pytorch.DeepLabV3Plus` (`encoder_name="resnet34"`, `encoder_weights="imagenet"`)
@@ -66,7 +66,7 @@
 | 방법 | 실행 장치 | 전·후처리 범위 | 파라미터 수 | Mean IoU | Mean Dice | 처리 시간 (ms/img) |
 | :--- | :---: | :--- | :---: | :---: | :---: | :---: |
 | 고전 기법 (Lab/HSV + K-means) | | | - | | | |
-| U-Net (ResNet-34) | | | | | | |
+| U-Net (ResNet-34) | Colab CUDA GPU | 리사이즈, 이진화(`0.5`) | `[확인 필요]` | **0.8284** | 0.8922 | `[확인 필요 - benchmark.py/test_summary.json 확인]` |
 | DeepLabv3+ (ResNet-34, Baseline BCE) | Colab CUDA GPU | 리사이즈, ImageNet 정규화, 이진화(0.45) | 22,437,457 | 0.8041 | 0.8758 | 13.18 |
 | DeepLabv3+ (ResNet-34, BCE+Dice) | Colab CUDA GPU | 리사이즈, ImageNet 정규화, 이진화(0.40) | 22,437,457 | **0.8262** | **0.8937** | **11.52** |
 
@@ -78,11 +78,13 @@
 
 ### 4.1 성공 사례 (3장 이상)
 - DeepLabv3+ (BCE+Dice) 기준 상위 3장 시각화: `DeepLabv3+/outputs/improved_bce_dice/success_cases.png` (Baseline: `DeepLabv3+/outputs/baseline_bce/success_cases.png`)
-- 합본 그림 및 분석 (담당자 기입): 
+- U-Net 시각화: `unet/outputs/unet_resnet34/success_cases.png`
+- 합본 그림 및 분석 (담당자 기입): U-Net(ResNet-34) 기준 용종 영역의 위치와 윤곽, 크기를 정답 마스크와 유사하게 분할한 사례 확인 (`unet/outputs/unet_resnet34/success_cases.png` 참조). *(개별 샘플 특징 보완 가능)*
 
 ### 4.2 실패 사례 (3장 이상)
 - DeepLabv3+ (BCE+Dice) 기준 하위 3장 시각화: `DeepLabv3+/outputs/improved_bce_dice/failure_cases.png` (Baseline: `DeepLabv3+/outputs/baseline_bce/failure_cases.png`)
-- 합본 그림 및 분석 (담당자 기입): 
+- U-Net 시각화: `unet/outputs/unet_resnet34/failure_cases.png`
+- 합본 그림 및 분석 (담당자 기입): U-Net(ResNet-34) 기준 경계가 모호하거나 크기가 작은 용종, 주변 점막·빛 반사/주름과 유사한 영역에서 과소/과대 분할 또는 오탐이 발생한 사례 확인 (`unet/outputs/unet_resnet34/failure_cases.png` 참조). *(개별 샘플 특징 보완 가능)*
 
 ---
 
@@ -90,17 +92,17 @@
 
 ### 5.1 오분할 원인 분석
 - **고전 기법 (장정훈 기입)**: 
-- **U-Net (강승태 기입)**: 
+- **U-Net (강승태 기입)**: 용종 경계가 흐릿한 경우 인코더·디코더 경계 정교화 한계, 소형 용종이나 내시경 빛 반사·점막 주름이 겹친 구간에서의 분할 오차 발생 경향 확인.
 - **DeepLabv3+ (강현구)**: `BCEWithLogitsLoss` 단독 학습 시 배경 픽셀 비중이 큰 소형 용종에서 경계가 뭉개지거나 과소 분할되는 경향 확인.
 
 ### 5.2 개선 가설 및 실험 결과
 - **DeepLabv3+ 개선 가설**: 픽셀 단위 손실(`BCE`)에 영역 겹침을 직접 최적화하는 `Soft Dice Loss`를 결합(`BCEDiceLoss`)하고, 검증 세트에서 최적 임계값을 조정하면 소형 용종 및 경계 분할 성능이 향상될 것이다.
-- **기타 모델 개선 내용 (담당자 기입)**: 
+- **기타 모델 개선 내용 (담당자 기입)**: U-Net(ResNet-34) 단일 실험 기준 Epoch 29에서 검증 Dice `0.8888`을 기록했으며, 테스트 세트에서 Mean IoU `0.8284`, Mean Dice `0.8922`를 달성함. *(추가 개선 실험 미진행 시 해당 사항 명시)*
 
 | 모델 설정 | 검증 최적 임계값 | Test IoU | Test Dice | ms/img | 비고 |
 | :--- | :---: | :---: | :---: | :---: | :--- |
 | 고전 기법 (개선 전 / 후) | | | | | |
-| U-Net (개선 전 / 후) | | | | | |
+| U-Net (개선 전 / 후) | `0.5` *(확인)* | 0.8284 | 0.8922 | `[확인 필요]` | Epoch 29 Best Val Dice `0.8888` |
 | DeepLabv3+ (개선 전: BCE) | 0.45 | 0.8041 | 0.8758 | 13.18 | 베이스라인 (Epoch 23) |
 | DeepLabv3+ (개선 후: BCE+Dice) | 0.40 | **0.8262** (+0.0221) | **0.8937** (+0.0179) | 11.52 | 개선 적용 (Epoch 19) |
 
@@ -113,7 +115,7 @@ Kvasir-SEG에서 학습·확정한 세 방법을 외부 공개 데이터셋인 C
 | 방법 | Kvasir-SEG Test IoU | Kvasir-SEG Test Dice | CVC-ClinicDB IoU | CVC-ClinicDB Dice |
 | :--- | :---: | :---: | :---: | :---: |
 | 고전 기법 | | | | |
-| U-Net (ResNet-34) | | | | |
+| U-Net (ResNet-34) | 0.8284 | 0.8922 | `[미실시/확인 필요]` | `[미실시/확인 필요]` |
 | DeepLabv3+ (ResNet-34, BCE+Dice) | 0.8262 | 0.8937 | | |
 
 ---
