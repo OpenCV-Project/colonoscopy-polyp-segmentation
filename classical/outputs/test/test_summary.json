@@ -1,0 +1,8 @@
+{
+  "num_images": 150,
+  "mean_iou": 0.2485993051160489,
+  "mean_dice": 0.36109144931833265,
+  "mean_ms_per_image": 18.01080858,
+  "device": "cpu (macOS-27.2.1-arm64-arm-64bit, OpenCV 스레드 10개)",
+  "timing_scope": "포함: 256×256 리사이즈·RGB 변환부터 모폴로지까지. 제외: 디스크 읽기, 지표 계산."
+}
