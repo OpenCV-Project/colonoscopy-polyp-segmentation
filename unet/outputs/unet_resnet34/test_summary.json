@@ -1,13 +1,13 @@
 {
-  "model": "U-Net (ResNet-34)",
-  "encoder_name": "resnet34",
-  "encoder_weights": "imagenet",
-  "threshold": 0.5,
-  "num_test_images": 150,
-  "mean_iou": 0.828383,
-  "mean_dice": 0.892248,
-  "checkpoint_path": "/content/drive/MyDrive/cv_project/checkpoints/unet_resnet34_best.pth",
-  "best_epoch": 29,
-  "best_val_iou": 0.824977,
-  "best_val_dice": 0.888842
+  "model": "U-Net (ResNet-34, ImageNet)",
+  "loss": "BCE + Per-Image Soft Dice Loss",
+  "scheduler": "CosineAnnealingLR",
+  "drop_last": true,
+  "amp": true,
+  "epochs": 30,
+  "best_epoch": 16,
+  "best_val_dice": 0.880915708283268,
+  "test_mean_iou": 0.8308779733755123,
+  "test_mean_dice": 0.8937163808218711,
+  "num_test_images": 150
 }
