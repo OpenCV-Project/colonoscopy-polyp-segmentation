@@ -39,6 +39,9 @@
       15,
       21,
       31
+    ],
+    "value_weight": [
+      0.0
     ]
   },
   "benchmark_warmup": 5

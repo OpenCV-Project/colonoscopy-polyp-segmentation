@@ -4,6 +4,7 @@
 1. 색 특징: 픽셀마다 Lab의 a*·b*, HSV의 S·V를 영상 안에서 0~1로 정규화한다.
 2. 군집화: 색 특징이 비슷한 픽셀끼리 K-means로 묶는다.
 3. 군집 선택: 면적 비율이 범위 안에 있는 군집 중 평균 a*(붉은 정도)가 가장 높은 군집을 용종으로 본다.
+   개선 실험에서는 a*에 V(밝기)를 value_weight만큼 더한 점수로 고른다. value_weight=0이면 원래 방법과 같다.
 4. 정제: 열림으로 작은 잡음을 지우고, 닫힘으로 작은 구멍과 틈을 메운다.
 """
 
@@ -17,13 +18,14 @@ from dataset import IMAGE_SIZE
 
 # extract_color_features가 쌓는 특징 순서: a*, b*, S, V
 A_STAR_INDEX = 0
+VALUE_INDEX = 3
 
 
 @dataclass(frozen=True)
 class ClassicalParams:
     """고전 기법 파라미터.
 
-    n_clusters, min_area_ratio, max_area_ratio, kernel_size는 검증 세트에서 고른다.
+    n_clusters, min_area_ratio, max_area_ratio, kernel_size, value_weight는 검증 세트에서 고른다.
     seed와 kmeans_* 값은 모든 조합에서 같게 고정한다.
     """
 
@@ -35,6 +37,8 @@ class ClassicalParams:
     kmeans_attempts: int
     kmeans_max_iter: int
     kmeans_epsilon: float
+    # 개선 실험: 군집을 고를 때 밝기(V)를 더하는 비중. 0이면 원래 방법(a*만 사용)이다.
+    value_weight: float = 0.0
 
 
 def predict_mask(image_rgb, params):
@@ -86,13 +90,14 @@ def cluster_pixels(features, params):
 
 
 def select_polyp_cluster(labels, features, params):
-    """면적 비율이 범위 안에 있는 군집 중 평균 a*가 가장 높은 군집을 0/1 uint8 마스크로 반환한다.
+    """면적 비율이 범위 안에 있는 군집 중 평균 점수가 가장 높은 군집을 0/1 uint8 마스크로 반환한다.
 
+    점수는 a* + value_weight × V이다(value_weight=0이면 a*만 본다).
     조건을 만족하는 군집이 없으면 빈 마스크를 반환한다.
     """
-    a_star = features[..., A_STAR_INDEX]
+    score = features[..., A_STAR_INDEX] + params.value_weight * features[..., VALUE_INDEX]
     polyp_cluster = None
-    highest_mean_a_star = -np.inf
+    highest_mean_score = -np.inf
     for cluster in range(params.n_clusters):
         in_cluster = labels == cluster
         area_ratio = np.count_nonzero(in_cluster) / labels.size
@@ -100,10 +105,10 @@ def select_polyp_cluster(labels, features, params):
         if not is_valid_area:
             continue
 
-        mean_a_star = a_star[in_cluster].mean()
-        if mean_a_star > highest_mean_a_star:
+        mean_score = score[in_cluster].mean()
+        if mean_score > highest_mean_score:
             polyp_cluster = cluster
-            highest_mean_a_star = mean_a_star
+            highest_mean_score = mean_score
 
     if polyp_cluster is None:
         return np.zeros(labels.shape, dtype=np.uint8)
