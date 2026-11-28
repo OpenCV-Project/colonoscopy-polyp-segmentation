@@ -1,10 +1,10 @@
 # 26-2 컴퓨터비전 미니 프로젝트 최종 보고서 (2팀)
 
 > **팀원 안내 (보고서 미완성 초안)**
-> - 현재 **DeepLabv3+ (강현구)** 파트의 실험 수치만 반영되어 있으며, 나머지 파트는 공란으로 비워 두었습니다.
+> - 현재 **고전 기법 (장정훈)** 및 **DeepLabv3+ (강현구)** 실험 수치가 반영되어 있으며, 나머지 파트는 공란으로 비워 두었습니다.
 > - **각자 맡은 파트의 실험 결과, 설정값, 시각화, 분석 내용을 아래 해당 공란에 직접 입력해 주세요.**
 >   - **김장희(팀장)**: 최종 비교표 취합 및 검토
->   - **장정훈**: 고전 기법 튜닝 파라미터·테스트 결과, 실패 분석, CVC-ClinicDB 외부 평가 수치
+>   - **장정훈**: 고전 기법 실패 원인 분석, 정성 비교, CVC-ClinicDB 외부 평가 수치
 >   - **강승태**: U-Net 학습 조건·파라미터 수·테스트 결과, 성공/실패 사례 합본 시각화
 
 - **주제**: 대장 내시경 용종 분할 (고전 영상처리 vs U-Net vs DeepLabv3+)
@@ -40,8 +40,10 @@
 ## 2. 구현 방법 및 실험 조건
 
 ### 2.1 고전 영상처리 베이스라인 (담당: 장정훈)
-- 방법 요약: 
-- 검증 세트에서 확정한 파라미터 (군집 수, 면적 범위, 커널 크기 등): 
+- 방법 요약: Lab(`a*`, `b*`) + HSV(`S`, `V`) 색공간 정규화 후 영상별 K-means 군집화 → 면적 비율 조건 내 평균 `a*`(+ 개선 실험에서는 밝기 `V` 비중) 최대 군집 선택 → 모폴로지 열림·닫힘 정제
+- 검증 세트에서 확정한 파라미터:
+  - 기본 (`classical/outputs/tune/best_params.json`): `n_clusters=3`, `min_area_ratio=0.0`, `max_area_ratio=0.8`, `kernel_size=15`, `value_weight=0.0` (seed=42)
+  - 개선 (`classical/outputs/improved/tune/best_params.json`): `n_clusters=4`, `min_area_ratio=0.0`, `max_area_ratio=0.8`, `kernel_size=9`, `value_weight=1.0` (seed=42)
 
 ### 2.2 U-Net (담당: 강승태)
 - 모델: `segmentation_models_pytorch.Unet` (`encoder_name="resnet34"`, `encoder_weights="imagenet"`)
@@ -65,7 +67,8 @@
 
 | 방법 | 실행 장치 | 전·후처리 범위 | 파라미터 수 | Mean IoU | Mean Dice | 처리 시간 (ms/img) |
 | :--- | :---: | :--- | :---: | :---: | :---: | :---: |
-| 고전 기법 (Lab/HSV + K-means) | | | - | | | |
+| 고전 기법 (기본: Lab/HSV + K-means) | CPU (macOS arm64, 10스레드) | 256×256 리사이즈·RGB 변환~모폴로지 | - | 0.2486 | 0.3611 | 18.01 |
+| 고전 기법 (개선: `value_weight=1.0`) | CPU (macOS arm64, 10스레드) | 256×256 리사이즈·RGB 변환~모폴로지 | - | 0.2680 | 0.3862 | 23.48 |
 | U-Net (ResNet-34) | | | | | | |
 | DeepLabv3+ (ResNet-34, Baseline BCE) | Colab CUDA GPU | 리사이즈, ImageNet 정규화, 이진화(0.45) | 22,437,457 | 0.8041 | 0.8758 | 13.18 |
 | DeepLabv3+ (ResNet-34, BCE+Dice) | Colab CUDA GPU | 리사이즈, ImageNet 정규화, 이진화(0.40) | 22,437,457 | **0.8262** | **0.8937** | **11.52** |
@@ -97,9 +100,10 @@
 - **DeepLabv3+ 개선 가설**: 픽셀 단위 손실(`BCE`)에 영역 겹침을 직접 최적화하는 `Soft Dice Loss`를 결합(`BCEDiceLoss`)하고, 검증 세트에서 최적 임계값을 조정하면 소형 용종 및 경계 분할 성능이 향상될 것이다.
 - **기타 모델 개선 내용 (담당자 기입)**: 
 
-| 모델 설정 | 검증 최적 임계값 | Test IoU | Test Dice | ms/img | 비고 |
+| 모델 설정 | 검증 최적 임계값 / 주요 파라미터 | Test IoU | Test Dice | ms/img | 비고 |
 | :--- | :---: | :---: | :---: | :---: | :--- |
-| 고전 기법 (개선 전 / 후) | | | | | |
+| 고전 기법 (개선 전: 기본) | `k=3, kernel=15, value_weight=0.0` | 0.2486 | 0.3611 | 18.01 | `classical/outputs/test` |
+| 고전 기법 (개선 후: `V` 비중 추가) | `k=4, kernel=9, value_weight=1.0` | 0.2680 (+0.0194) | 0.3862 (+0.0251) | 23.48 | `classical/outputs/improved/test` |
 | U-Net (개선 전 / 후) | | | | | |
 | DeepLabv3+ (개선 전: BCE) | 0.45 | 0.8041 | 0.8758 | 13.18 | 베이스라인 (Epoch 23) |
 | DeepLabv3+ (개선 후: BCE+Dice) | 0.40 | **0.8262** (+0.0221) | **0.8937** (+0.0179) | 11.52 | 개선 적용 (Epoch 19) |
@@ -112,7 +116,7 @@ Kvasir-SEG에서 학습·확정한 세 방법을 외부 공개 데이터셋인 C
 
 | 방법 | Kvasir-SEG Test IoU | Kvasir-SEG Test Dice | CVC-ClinicDB IoU | CVC-ClinicDB Dice |
 | :--- | :---: | :---: | :---: | :---: |
-| 고전 기법 | | | | |
+| 고전 기법 (개선: `value_weight=1.0`) | 0.2680 | 0.3862 | | |
 | U-Net (ResNet-34) | | | | |
 | DeepLabv3+ (ResNet-34, BCE+Dice) | 0.8262 | 0.8937 | | |
 
