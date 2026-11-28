@@ -30,6 +30,14 @@ colonoscopy-polyp-segmentation/
 ├── metrics.py                 # 이미지별 IoU·Dice 및 산술 평균 계산
 ├── benchmark.py               # 예열 후 이미지당 평균 처리 시간(ms) 측정
 ├── train_unet.py              # U-Net (ResNet-34) 학습 및 평가 스크립트
+├── classical/
+│   ├── method.py              # 고전 기법 본체 (Lab·HSV 색 특징 + K-means + 모폴로지)
+│   ├── config.json            # 시드, K-means 설정, 검증 세트 탐색 범위
+│   ├── config.py              # 설정 읽기(--config, --data-root)와 사용한 설정 저장
+│   ├── explore_train.py       # 학습 세트의 용종 색·면적 통계 (설계 근거)
+│   ├── tune.py                # 검증 세트 그리드 탐색 → best_params.json
+│   ├── evaluate_test.py       # best_params로 테스트 세트 평가, 처리 시간 측정
+│   └── outputs/               # 고전 기법 실험 결과(CSV, JSON)
 └── DeepLabv3+/
     ├── config.py              # DeepLabv3+ 학습·평가 하이퍼파라미터 설정
     ├── model.py               # DeepLabv3+ 모델 생성, ImageNet 정규화, BCEDiceLoss
@@ -81,6 +89,23 @@ python DeepLabv3+/run_colab.py \
 ```bash
 python train_unet.py
 ```
+
+### 4.4 고전 기법 튜닝 및 평가
+저장소 루트에서 모듈로 실행합니다. 학습이 없으므로 로컬 CPU에서 동작하며, OpenCV와 NumPy만 사용합니다.
+
+```bash
+# (선택) 학습 세트의 용종 색·면적 통계 → classical/outputs/explore_train/
+python -m classical.explore_train --data-root "/경로/Kvasir-SEG"
+
+# 1) 검증 세트에서 파라미터 조합을 모두 평가해 best_params.json 저장 → classical/outputs/tune/
+python -m classical.tune --data-root "/경로/Kvasir-SEG"
+
+# 2) best_params.json으로 테스트 세트 평가와 처리 시간 측정 → classical/outputs/test/
+python -m classical.evaluate_test --data-root "/경로/Kvasir-SEG"
+```
+
+- 세 스크립트는 `classical/config.json`(`--config`로 변경 가능)을 함께 읽고, `--data-root`·`--output-dir`로 경로만 덮어씁니다. 실제로 쓴 설정은 결과 폴더의 `config_used.json`에 저장됩니다.
+- 다른 코드에서 쓰려면 `from classical.method import ClassicalParams, predict_mask`로 불러와, 256×256 RGB 이미지를 넣으면 0/1 `uint8` 마스크를 받습니다.
 
 ---
 
