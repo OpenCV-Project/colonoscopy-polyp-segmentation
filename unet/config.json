@@ -1,0 +1,28 @@
+{
+  "model": {
+    "arch": "unet",
+    "encoder_name": "resnet34",
+    "encoder_weights": "imagenet",
+    "in_channels": 3,
+    "classes": 1,
+    "threshold": 0.5
+  },
+  "data": {
+    "dataset_dir": "/content/drive/MyDrive/Kvasir-SEG",
+    "csv_path": "/content/splits.csv",
+    "save_dir": "/content/drive/MyDrive/cv_project/checkpoints",
+    "img_size": 256,
+    "batch_size": 16,
+    "num_workers": 2
+  },
+  "train": {
+    "epochs": 30,
+    "lr": 0.0001,
+    "weight_decay": 0.0001,
+    "seed": 42,
+    "loss_mode": "bce_dice",
+    "bce_weight": 0.5,
+    "dice_weight": 0.5,
+    "use_amp": true
+  }
+}
