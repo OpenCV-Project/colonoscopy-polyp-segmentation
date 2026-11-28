@@ -28,8 +28,9 @@ def build_candidates(config):
     """탐색 범위로 만들 수 있는 모든 파라미터 조합을 만든다. 하한이 상한 이상인 조합은 뺀다."""
     search = config["search"]
     candidates = []
-    for n_clusters, min_area_ratio, max_area_ratio, kernel_size in itertools.product(
-        search["n_clusters"], search["min_area_ratio"], search["max_area_ratio"], search["kernel_size"]
+    for n_clusters, min_area_ratio, max_area_ratio, kernel_size, value_weight in itertools.product(
+        search["n_clusters"], search["min_area_ratio"], search["max_area_ratio"],
+        search["kernel_size"], search["value_weight"],
     ):
         if min_area_ratio >= max_area_ratio:
             continue
@@ -42,6 +43,7 @@ def build_candidates(config):
             kmeans_attempts=config["kmeans"]["attempts"],
             kmeans_max_iter=config["kmeans"]["max_iter"],
             kmeans_epsilon=config["kmeans"]["epsilon"],
+            value_weight=value_weight,
         ))
     return candidates
 

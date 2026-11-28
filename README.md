@@ -33,6 +33,7 @@ colonoscopy-polyp-segmentation/
 ├── classical/
 │   ├── method.py              # 고전 기법 본체 (Lab·HSV 색 특징 + K-means + 모폴로지)
 │   ├── config.json            # 시드, K-means 설정, 검증 세트 탐색 범위
+│   ├── config_improved.json   # 개선 실험 설정 (밝기 비중 value_weight 탐색 추가)
 │   ├── config.py              # 설정 읽기(--config, --data-root)와 사용한 설정 저장
 │   ├── explore_train.py       # 학습 세트의 용종 색·면적 통계 (설계 근거)
 │   ├── tune.py                # 검증 세트 그리드 탐색 → best_params.json
@@ -104,6 +105,7 @@ python -m classical.tune --data-root "/경로/Kvasir-SEG"
 python -m classical.evaluate_test --data-root "/경로/Kvasir-SEG"
 ```
 
+- 개선 실험(군집을 고를 때 a*에 밝기 V를 더함)은 같은 명령에 `--config classical/config_improved.json`을 붙여 실행하며, 결과는 `classical/outputs/improved/`에 저장됩니다.
 - 세 스크립트는 `classical/config.json`(`--config`로 변경 가능)을 함께 읽고, `--data-root`·`--output-dir`로 경로만 덮어씁니다. 실제로 쓴 설정은 결과 폴더의 `config_used.json`에 저장됩니다.
 - 다른 코드에서 쓰려면 `from classical.method import ClassicalParams, predict_mask`로 불러와, 256×256 RGB 이미지를 넣으면 0/1 `uint8` 마스크를 받습니다.
 

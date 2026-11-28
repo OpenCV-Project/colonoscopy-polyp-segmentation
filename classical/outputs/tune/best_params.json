@@ -6,5 +6,6 @@
   "seed": 42,
   "kmeans_attempts": 3,
   "kmeans_max_iter": 100,
-  "kmeans_epsilon": 0.001
+  "kmeans_epsilon": 0.001,
+  "value_weight": 0.0
 }

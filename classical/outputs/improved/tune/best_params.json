@@ -1,0 +1,11 @@
+{
+  "n_clusters": 4,
+  "min_area_ratio": 0.0,
+  "max_area_ratio": 0.8,
+  "kernel_size": 9,
+  "seed": 42,
+  "kmeans_attempts": 3,
+  "kmeans_max_iter": 100,
+  "kmeans_epsilon": 0.001,
+  "value_weight": 1.0
+}
