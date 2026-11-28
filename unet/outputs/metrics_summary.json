@@ -1,0 +1,12 @@
+{
+  "model": "U-Net (ResNet-34, ImageNet)",
+  "loss": "BCE + Per-Image Soft Dice Loss",
+  "scheduler": "CosineAnnealingLR",
+  "drop_last": true,
+  "amp": true,
+  "epochs": 30,
+  "best_epoch": 16,
+  "best_val_dice": 0.880915708283268,
+  "test_mean_iou": 0.8308782361264871,
+  "test_mean_dice": 0.8937149556962423
+}
